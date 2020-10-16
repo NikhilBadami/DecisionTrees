@@ -76,10 +76,23 @@ def build_decision_tree():
         The root node of the decision tree.
     """
 
-    decision_tree_root = None
+    # Create root A1 node
+    decision_tree_root = DecisionNode(None, None, lambda a1: a1[0] == 1)
+    decision_tree_root.left = DecisionNode(None, None, None, 1)
+    a3 = DecisionNode(None, None, lambda a3: a3[2] == 1)
+    decision_tree_root.right = a3
 
-    # TODO: finish this.
-    raise NotImplemented()
+    #Create A3 left node
+    a4_a3_left = DecisionNode(None, None, lambda a4: a4[3] == 1)
+    a4_a3_left.left = DecisionNode(None, None, None, 1)
+    a4_a3_left.right = DecisionNode(None, None, None, 0)
+    a3.left = a4_a3_left
+
+    # Create A3 right node
+    a4_a3_right = DecisionNode(None, None, lambda a4: a4[3] == 1)
+    a4_a3_right.left = DecisionNode(None, None, None, 0)
+    a4_a3_right.right = DecisionNode(None, None, None, 1)
+    a3.right = a4_a3_right
 
     return decision_tree_root
 
