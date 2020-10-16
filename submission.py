@@ -348,9 +348,8 @@ class Vectorization:
         Returns:
             Numpy array of data.
         """
-
-        # TODO: finish this.
-        raise NotImplemented()
+        mult = data * data
+        return mult + data
 
     def non_vectorized_slice(self, data):
         """Find row with max sum using loops.
@@ -384,9 +383,10 @@ class Vectorization:
         Returns:
             Tuple (Max row sum, index of row with max sum)
         """
-
-        # TODO: finish this.
-        raise NotImplemented()
+        first_100 = data[0:100, :]
+        summed = np.sum(first_100, axis=1)
+        idx = summed.argmax()
+        return summed[idx], idx
 
     def non_vectorized_flatten(self, data):
         """Display occurrences of positive numbers using loops.
@@ -420,11 +420,18 @@ class Vectorization:
         Returns:
             List of occurrences [(integer, number of occurrences), ...]
         """
-
-        # TODO: finish this.
-        raise NotImplemented()
+        flat = data.flatten()
+        unique_nums = {}
+        for i in range(flat.shape[0]):
+            if flat[i] > 0:
+                if flat[i] in unique_nums.keys():
+                    count = unique_nums[flat[i]]
+                    count += 1
+                    unique_nums[flat[i]] = count
+                else:
+                    unique_nums[flat[i]] = 1
+        return unique_nums.items()
 
 def return_your_name():
     # return your name
-    # TODO: finish this
-    raise NotImplemented()
+    return "Nikhil Badami"
