@@ -220,7 +220,12 @@ def gini_impurity(class_vector):
     Returns:
         Floating point number representing the gini impurity.
     """
-    raise NotImplemented()
+    class_vector_np = np.array(class_vector)
+    num_ones = np.count_nonzero(class_vector_np)
+    num_zeros = class_vector_np.size - num_ones
+    p_1 = num_ones / class_vector_np.size
+    p_0 = num_zeros / class_vector_np.size
+    return 1 - ((p_1 ** 2) + (p_0 ** 2))
 
 
 def gini_gain(previous_classes, current_classes):
@@ -232,7 +237,13 @@ def gini_gain(previous_classes, current_classes):
     Returns:
         Floating point number representing the information gain.
     """
-    raise NotImplemented()
+    gini_prev = gini_impurity(previous_classes)
+
+    total_cur_elements = np.array(current_classes).size
+    gini_cur = 0
+    for cl in current_classes:
+        gini_cur += (len(cl) / total_cur_elements) * gini_impurity(cl)
+    return gini_prev - gini_cur
 
 
 class DecisionTree:
