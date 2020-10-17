@@ -108,10 +108,31 @@ def confusion_matrix(classifier_output, true_labels):
     Returns:
         A two dimensional array representing the confusion matrix.
     """
+    # Convert input into numpy arrays
+    classifier_np = np.array(classifier_output)
+    labels_np = np.array(true_labels)
 
-    # TODO: finish this.
-    raise NotImplemented()
+    # Get true positive values
+    tp_classifier = (classifier_np == 1)
+    tp_label = (labels_np == 1)
+    tp = np.count_nonzero(np.logical_and(tp_classifier, tp_label))
 
+    # Get false positive values
+    fp_classifier = (classifier_np == 1)
+    fp_label = (labels_np == 0)
+    fp = np.count_nonzero(np.logical_and(fp_classifier, fp_label))
+
+    # Get false negative values
+    fn_classifier = (classifier_np == 0)
+    fn_label = (labels_np == 1)
+    fn = np.count_nonzero(np.logical_and(fn_classifier, fn_label))
+
+    # Get true negative values
+    tn_classifier = (classifier_np == 0)
+    tn_label = (labels_np == 0)
+    tn = np.count_nonzero(np.logical_and(tn_classifier, tn_label))
+
+    return np.array([[tp, fn], [fp, tn]])
 
 def precision(classifier_output, true_labels):
     """Get the precision of a classifier compared to the correct values.
@@ -123,9 +144,21 @@ def precision(classifier_output, true_labels):
     Returns:
         The precision of the classifier output.
     """
+    # Convert input into numpy arrays
+    classifier_np = np.array(classifier_output)
+    labels_np = np.array(true_labels)
 
-    # TODO: finish this.
-    raise NotImplemented()
+    # Get true positive values
+    tp_classifier = (classifier_np == 1)
+    tp_label = (labels_np == 1)
+    tp = np.count_nonzero(np.logical_and(tp_classifier, tp_label))
+
+    # Get false positive values
+    fp_classifier = (classifier_np == 1)
+    fp_label = (labels_np == 0)
+    fp = np.count_nonzero(np.logical_and(fp_classifier, fp_label))
+
+    return tp / (tp + fp)
 
 
 def recall(classifier_output, true_labels):
@@ -138,9 +171,21 @@ def recall(classifier_output, true_labels):
     Returns:
         The recall of the classifier output.
     """
+    # Convert input into numpy arrays
+    classifier_np = np.array(classifier_output)
+    labels_np = np.array(true_labels)
 
-    # TODO: finish this.
-    raise NotImplemented()
+    # Get true positive values
+    tp_classifier = (classifier_np == 1)
+    tp_label = (labels_np == 1)
+    tp = np.count_nonzero(np.logical_and(tp_classifier, tp_label))
+
+    # Get false negative values
+    fn_classifier = (classifier_np == 0)
+    fn_label = (labels_np == 1)
+    fn = np.count_nonzero(np.logical_and(fn_classifier, fn_label))
+
+    return tp / (tp + fn)
 
 
 def accuracy(classifier_output, true_labels):
@@ -153,9 +198,13 @@ def accuracy(classifier_output, true_labels):
     Returns:
         The accuracy of the classifier output.
     """
+    cm = confusion_matrix(classifier_output, true_labels)
+    tp = cm[0][0]
+    fn = cm[0][1]
+    fp = cm[1][0]
+    tn = cm[1][1]
 
-    # TODO: finish this.
-    raise NotImplemented()
+    return (tp + tn) / (tp + fp + fn + tn)
 
 
 def gini_impurity(class_vector):
