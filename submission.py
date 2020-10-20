@@ -220,6 +220,8 @@ def gini_impurity(class_vector):
     Returns:
         Floating point number representing the gini impurity.
     """
+    if len(class_vector) == 0:
+        return 0
     class_vector_np = np.array(class_vector)
     num_ones = np.count_nonzero(class_vector_np)
     num_zeros = class_vector_np.size - num_ones
@@ -277,9 +279,87 @@ class DecisionTree:
         Returns:
             Root node of decision tree.
         """
+        features_np = np.array(features)
+        classes_np = np.array(classes)
 
-        # TODO: finish this.
-        raise NotImplemented()
+        # Check base cases
+        if classes_np.size == 0:
+            return None
+        if np.all(classes_np == classes_np[0]):
+            return DecisionNode(None, None, None, classes_np[0])
+        elif depth == self.depth_limit:
+            num_ones = np.count_nonzero(classes_np)
+            num_zeros = classes_np.size - num_ones
+            return DecisionNode(None, None, None, 1 if num_ones > num_zeros else 0)
+
+        # Find best attribute to split on
+        # Maps the index of the attribute to its best threshold value
+        alpha_threshold = {}
+        for i in range(features_np.shape[1]):
+            # Create mx2 matrix. First column is the attribute 2nd column is the class label
+            cur_alpha = np.zeros((features_np.shape[0], 2))
+            cur_alpha[:, 0] = features_np[:, i]
+            cur_alpha[:, 1] = classes_np
+
+            # Sort cur_alpha by attribute values. Maintain class label
+            cur_alpha_sorted = cur_alpha[cur_alpha[:, 0].argsort()]
+
+            # Look for changes in class label. If there is a change, mark the first and last index
+            # of the label and calculate the average, which will be the threshold to split alpha on
+            # Calculate the gini gain for each split and save the best one
+            start_idx = 0
+            best_threshold = 0
+            max_gain = float("-inf")
+            for j in range(cur_alpha_sorted.shape[0]):
+                if cur_alpha_sorted[j, 1] != cur_alpha_sorted[start_idx, 1]:
+                    end_idx = j
+                    # Calculate average of this array slice
+                    threshold = cur_alpha_sorted[start_idx:end_idx].mean(axis=0)[0]
+                    # Split attribute based on threshold.
+                    right_split = cur_alpha_sorted[cur_alpha_sorted[:, 0] < threshold][:, 1]
+                    left_split = cur_alpha_sorted[cur_alpha_sorted[:, 0] >= threshold][:, 1]
+                    # Calculate Gini Gain for this threshold
+                    cur_gain = gini_gain(classes_np, [left_split, right_split])
+                    if cur_gain > max_gain:
+                        best_threshold = threshold
+                        max_gain = cur_gain
+                    start_idx = j
+
+            alpha_threshold[i] = best_threshold
+
+        # Get tuples of (attr_idx, threshold) pairs
+        alpha_threshold_pairs = np.array([(attr, thresh) for attr, thresh in alpha_threshold.items()])
+        idx = np.argmax(alpha_threshold_pairs[:, 1])
+        best_alpha_threshold = alpha_threshold_pairs[idx]
+
+        # Create root node for subtree. Consider anything greater than the threshold to be "True"
+        attr = best_alpha_threshold[0]
+        thr = best_alpha_threshold[1]
+        features_classes = np.zeros((features_np.shape[0], features_np.shape[1] + 1))
+        features_classes[:, 0:features_np.shape[1]] = features_np
+        features_classes[:, -1] = classes_np
+        root = DecisionNode(None, None, lambda ex: ex[int(attr)] >= thr)
+
+        left_split = features_classes[features_classes[:, int(attr)] >= thr]
+        right_split = features_classes[features_classes[:, int(attr)] < thr]
+        # Create left node
+        left_node = self.__build_tree__(left_split[:, 0:features_np.shape[1]], left_split[:, -1], depth+1)
+        if left_node is None:
+            # Set node to return label of pluraity of current examples
+            num_ones = np.count_nonzero(classes_np)
+            num_zeros = classes_np.size - num_ones
+            left_node = DecisionNode(None, None, None, 1 if num_ones > num_zeros else 0)
+
+        # Create right node
+        right_node = self.__build_tree__(right_split[:, 0:features_np.shape[1]], right_split[:, -1], depth+1)
+        if right_node is None:
+            # Set node to return label of pluraity of current examples
+            num_ones = np.count_nonzero(classes_np)
+            num_zeros = classes_np.size - num_ones
+            right_node = DecisionNode(None, None, None, 1 if num_ones > num_zeros else 0)
+        root.left = left_node
+        root.right = right_node
+        return root
 
     def classify(self, features):
         """Use the fitted tree to classify a list of example features.
