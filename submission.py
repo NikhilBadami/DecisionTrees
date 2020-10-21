@@ -251,7 +251,7 @@ def gini_gain(previous_classes, current_classes):
 class DecisionTree:
     """Class for automatic tree-building and classification."""
 
-    def __init__(self, depth_limit=float('inf')):
+    def __init__(self, depth_limit=15):
         """Create a decision tree with a set depth limit.
         Starts with an empty root.
         Args:
@@ -293,8 +293,8 @@ class DecisionTree:
             return DecisionNode(None, None, None, 1 if num_ones > num_zeros else 0)
 
         # Find best attribute to split on
-        # Maps the index of the attribute to its best threshold value
-        alpha_threshold = {}
+        # Keeps track of tuple of (attr_idx, best_threshold, best_gain)
+        alpha_threshold = []
         for i in range(features_np.shape[1]):
             # Create mx2 matrix. First column is the attribute 2nd column is the class label
             cur_alpha = np.zeros((features_np.shape[0], 2))
@@ -325,12 +325,13 @@ class DecisionTree:
                         max_gain = cur_gain
                     start_idx = j
 
-            alpha_threshold[i] = best_threshold
+            alpha_threshold.append((i, best_threshold, max_gain))
 
         # Get tuples of (attr_idx, threshold) pairs
-        alpha_threshold_pairs = np.array([(attr, thresh) for attr, thresh in alpha_threshold.items()])
-        idx = np.argmax(alpha_threshold_pairs[:, 1])
-        best_alpha_threshold = alpha_threshold_pairs[idx]
+        best_alpha_meta = np.array(alpha_threshold)
+        np.argmax(best_alpha_meta[:, :, ])
+        idx = np.argmax(best_alpha_meta[:, 2])
+        best_alpha_threshold = best_alpha_meta[idx]
 
         # Create root node for subtree. Consider anything greater than the threshold to be "True"
         attr = best_alpha_threshold[0]
@@ -368,11 +369,12 @@ class DecisionTree:
         Return:
             A list of class labels.
         """
-
         class_labels = []
-
-        # TODO: finish this.
-        raise NotImplemented()
+        # Each column is a feature. Send each column in to decision tree, save label
+        features_np = np.array(features)
+        for i in range(features_np.shape[0]):
+            feature = features_np[i, :]
+            class_labels.append(self.root.decide(feature))
         return class_labels
 
 
