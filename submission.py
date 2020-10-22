@@ -391,10 +391,30 @@ def generate_k_folds(dataset, k):
         => Each fold is a tuple of sets.
         => Each Set is a tuple of numpy arrays.
     """
+    datapoints_np = np.array(dataset[0])
+    labels_np = np.array(dataset[1])
+    split_interval = int(datapoints_np.shape[0] / k)
+    folds = []
+    for i in range(k):
+        # Create training dataset
+        left_half = datapoints_np[:i*split_interval, :]
+        right_half = datapoints_np[(i+1) * split_interval:, :]
+        training_features = np.concatenate((left_half, right_half))
+        left_half = labels_np[:i*split_interval]
+        right_half = labels_np[(i+1) * split_interval:]
+        training_classes = np.concatenate((left_half, right_half))
+        train_set = (training_features, training_classes)
 
-    # TODO: finish this.
-    raise NotImplemented()
+        # Fit tree
+        dt = DecisionTree()
+        dt.fit(training_features, training_classes)
 
+        # Create test dataset
+        test_features = datapoints_np[i*split_interval:(i+1)*split_interval, :]
+        test_classes = dt.classify(test_features)
+        test_set = (test_features, test_classes)
+        folds.append((train_set, test_set))
+    return folds
 
 class RandomForest:
     """Random forest classification."""
