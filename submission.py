@@ -261,16 +261,29 @@ class DecisionTree:
         self.root = None
         self.depth_limit = depth_limit
 
-    def fit(self, features, classes):
+    def fit(
+            self,
+            features,
+            classes,
+            attr_sample_rate=None,
+            attr_considered=None
+        ):
         """Build the tree from root using __build_tree__().
         Args:
             features (m x n): m examples with n features.
             classes (m x 1): Array of Classes.
+            attr_sample_rate (optional): attribute sample rate for random forest
+            attr_considered (optional): attributes already considered
         """
 
-        self.root = self.__build_tree__(features, classes)
+        self.root = self.__build_tree__(
+            features,
+            classes,
+            attr_sample_rate=attr_sample_rate,
+            attr_considered=attr_considered
+        )
 
-    def __build_tree__(self, features, classes, depth=0):
+    def __build_tree__(self, features, classes, depth=0, attr_sample_rate=None, attr_considered=None):
         """Build tree that automatically finds the decision functions.
         Args:
             features (m x n): m examples with n features.
@@ -293,9 +306,33 @@ class DecisionTree:
             return DecisionNode(None, None, None, 1 if num_ones > num_zeros else 0)
 
         # Find best attribute to split on
+        # First, check to see if this tree is part of a random forest
+        attr_used = None
+        if attr_sample_rate is not None:
+            # Find attributes to split on
+            num_attr = features_np.shape[1] * attr_sample_rate
+            attr_avail = [attr for attr in np.arange(features_np.shape[1]) if attr not in attr_considered]
+            if len(attr_avail) == 0:
+                # We've used up all the attributes and should return the plurality of classes
+                # as the class
+                num_ones = np.count_nonzero(classes_np)
+                num_zeros = classes_np.size - num_ones
+                return DecisionNode(None, None, None, 1 if num_ones > num_zeros else 0)
+            elif len(attr_avail) == 1:
+                # Only one attribute remains
+                attr_used = attr_avail
+            else:
+                attr_used = np.random.choice(attr_avail, size=num_attr, replace=False)
+
         # Keeps track of tuple of (attr_idx, best_threshold, best_gain)
         alpha_threshold = []
         for i in range(features_np.shape[1]):
+            # Check to see if this is part of a random forest. If so, skip this attribute if it wasn't
+            # selected to be trained on
+            if attr_sample_rate is not None:
+                if i not in attr_used:
+                    continue
+
             # Create mx2 matrix. First column is the attribute 2nd column is the class label
             cur_alpha = np.zeros((features_np.shape[0], 2))
             cur_alpha[:, 0] = features_np[:, i]
@@ -336,6 +373,8 @@ class DecisionTree:
         # Create root node for subtree. Consider anything greater than the threshold to be "True"
         attr = best_alpha_threshold[0]
         thr = best_alpha_threshold[1]
+        if attr_considered is not None:
+            attr_considered.append(attr)
         features_classes = np.zeros((features_np.shape[0], features_np.shape[1] + 1))
         features_classes[:, 0:features_np.shape[1]] = features_np
         features_classes[:, -1] = classes_np
@@ -344,7 +383,13 @@ class DecisionTree:
         left_split = features_classes[features_classes[:, int(attr)] >= thr]
         right_split = features_classes[features_classes[:, int(attr)] < thr]
         # Create left node
-        left_node = self.__build_tree__(left_split[:, 0:features_np.shape[1]], left_split[:, -1], depth+1)
+        left_node = self.__build_tree__(
+            left_split[:, 0:features_np.shape[1]],
+            left_split[:, -1],
+            depth+1,
+            attr_sample_rate,
+            attr_considered
+        )
         if left_node is None:
             # Set node to return label of pluraity of current examples
             num_ones = np.count_nonzero(classes_np)
@@ -352,7 +397,13 @@ class DecisionTree:
             left_node = DecisionNode(None, None, None, 1 if num_ones > num_zeros else 0)
 
         # Create right node
-        right_node = self.__build_tree__(right_split[:, 0:features_np.shape[1]], right_split[:, -1], depth+1)
+        right_node = self.__build_tree__(
+            right_split[:, 0:features_np.shape[1]],
+            right_split[:, -1],
+            depth+1,
+            attr_sample_rate,
+            attr_considered
+        )
         if right_node is None:
             # Set node to return label of pluraity of current examples
             num_ones = np.count_nonzero(classes_np)
@@ -440,9 +491,20 @@ class RandomForest:
             features (m x n): m examples with n features.
             classes (m x 1): Array of Classes.
         """
+        full_dataset = np.zeros((features.shape[0], features.shape[1] + 1))
+        full_dataset[:, :-1] = features
+        full_dataset[:, -1] = classes
+        for i in range(self.num_trees):
+            # Get the examples to train on
+            num_samples = int(features.shape[0] * self.example_subsample_rate)
+            sample_idxs = np.random.randint(0, high=features.shape[0], size=num_samples)
+            examples = full_dataset[sample_idxs]
 
-        # TODO: finish this.
-        raise NotImplemented()
+            # Train decision tree
+            dt = DecisionTree()
+            dt.fit(examples[:, :-1], examples[:, -1], self.attr_subsample_rate, [])
+            self.trees.append(dt)
+
 
     def classify(self, features):
         """Classify a list of features based on the trained random forest.
@@ -450,8 +512,6 @@ class RandomForest:
             features (m x n): m examples with n features.
         """
 
-        # TODO: finish this.
-        raise NotImplemented()
 
 
 class ChallengeClassifier:
