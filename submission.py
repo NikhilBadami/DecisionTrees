@@ -322,7 +322,7 @@ class DecisionTree:
                 # Only one attribute remains
                 attr_used = attr_avail
             else:
-                attr_used = np.random.choice(attr_avail, size=num_attr, replace=False)
+                attr_used = np.random.choice(attr_avail, size=int(num_attr), replace=False)
 
         # Keeps track of tuple of (attr_idx, best_threshold, best_gain)
         alpha_threshold = []
@@ -497,11 +497,11 @@ class RandomForest:
         for i in range(self.num_trees):
             # Get the examples to train on
             num_samples = int(features.shape[0] * self.example_subsample_rate)
-            sample_idxs = np.random.randint(0, high=features.shape[0], size=num_samples)
+            sample_idxs = np.random.randint(0, high=features.shape[0], size=int(num_samples))
             examples = full_dataset[sample_idxs]
 
             # Train decision tree
-            dt = DecisionTree()
+            dt = DecisionTree(depth_limit=5)
             dt.fit(examples[:, :-1], examples[:, -1], self.attr_subsample_rate, [])
             self.trees.append(dt)
 
@@ -511,7 +511,22 @@ class RandomForest:
         Args:
             features (m x n): m examples with n features.
         """
+        raw_labels = []
+        for i in range(self.num_trees):
+            labels = self.trees[i].classify(features)
+            raw_labels.append(labels)
 
+        # Condense each row of raw_labels to the most frequent value in that column
+        features_np = np.array(features)
+        # raw_labels will be num_trees x m by default. Transpose to make it m x num_trees
+        raw_labels_np = np.array(raw_labels).T
+        class_labels = np.zeros((features_np.shape[0], 1))
+        for i in range(features_np.shape[0]):
+            ex = raw_labels_np[i, :]
+            num_ones = np.count_nonzero(ex)
+            num_zeros = ex.size - num_ones
+            class_labels[i, :] = 1 if num_ones > num_zeros else 0
+        return class_labels
 
 
 class ChallengeClassifier:
