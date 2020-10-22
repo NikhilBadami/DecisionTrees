@@ -539,7 +539,7 @@ class ChallengeClassifier:
         defaults.
         """
 
-        self.rf = RandomForest(10, 17, 0.5, 0.25)
+        self.dt = DecisionTree(depth_limit=18)
 
     def fit(self, features, classes):
         """Build the underlying tree(s).
@@ -548,8 +548,7 @@ class ChallengeClassifier:
             features (m x n): m examples with n features.
             classes (m x 1): Array of Classes.
         """
-
-        self.rf.fit(features, classes)
+        self.dt.fit(features, classes)
 
     def classify(self, features):
         """Classify a list of features.
@@ -559,7 +558,7 @@ class ChallengeClassifier:
         Returns:
             A list of class labels.
         """
-        return self.rf.classify(features)
+        return self.dt.classify(features)
 
 
 class Vectorization:
