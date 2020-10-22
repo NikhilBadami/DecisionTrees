@@ -318,7 +318,7 @@ class DecisionTree:
                 num_ones = np.count_nonzero(classes_np)
                 num_zeros = classes_np.size - num_ones
                 return DecisionNode(None, None, None, 1 if num_ones > num_zeros else 0)
-            elif len(attr_avail) == 1:
+            elif len(attr_avail) < num_attr:
                 # Only one attribute remains
                 attr_used = attr_avail
             else:
@@ -501,7 +501,7 @@ class RandomForest:
             examples = full_dataset[sample_idxs]
 
             # Train decision tree
-            dt = DecisionTree(depth_limit=5)
+            dt = DecisionTree(depth_limit=self.depth_limit)
             dt.fit(examples[:, :-1], examples[:, -1], self.attr_subsample_rate, [])
             self.trees.append(dt)
 
@@ -539,8 +539,7 @@ class ChallengeClassifier:
         defaults.
         """
 
-        # TODO: finish this.
-        raise NotImplemented()
+        self.rf = RandomForest(10, 17, 0.5, 0.25)
 
     def fit(self, features, classes):
         """Build the underlying tree(s).
@@ -550,8 +549,7 @@ class ChallengeClassifier:
             classes (m x 1): Array of Classes.
         """
 
-        # TODO: finish this.
-        raise NotImplemented()
+        self.rf.fit(features, classes)
 
     def classify(self, features):
         """Classify a list of features.
@@ -561,9 +559,7 @@ class ChallengeClassifier:
         Returns:
             A list of class labels.
         """
-
-        # TODO: finish this.
-        raise NotImplemented()
+        return self.rf.classify(features)
 
 
 class Vectorization:
@@ -670,17 +666,9 @@ class Vectorization:
         Returns:
             List of occurrences [(integer, number of occurrences), ...]
         """
-        flat = data.flatten()
-        unique_nums = {}
-        for i in range(flat.shape[0]):
-            if flat[i] > 0:
-                if flat[i] in unique_nums.keys():
-                    count = unique_nums[flat[i]]
-                    count += 1
-                    unique_nums[flat[i]] = count
-                else:
-                    unique_nums[flat[i]] = 1
-        return unique_nums.items()
+        flat = np.hstack(data)
+        values, freq = np.unique(flat, return_counts=True)
+        return [(values[i], freq[i]) for i in range(len(values)) if values[i] > 0]
 
 def return_your_name():
     # return your name
